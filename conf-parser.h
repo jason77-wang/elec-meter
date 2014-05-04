@@ -23,9 +23,7 @@
 ***/
 
 #include <stdio.h>
-
-#include <pulse/proplist.h>
-
+#include "core-util.h"
 /* An abstract parser for simple, line based, shallow configuration
  * files consisting of variable assignments only. */
 
@@ -53,7 +51,7 @@ struct pa_config_parser_state {
     /* Private data to be used only by conf-parser.c. */
     const pa_config_item *item_table;
     char buf[4096];
-    pa_proplist *proplist;
+  //    pa_proplist *proplist;
     bool in_proplist;
 };
 
@@ -70,7 +68,7 @@ struct pa_config_parser_state {
  * properties, and those properties will be merged into the given
  * proplist. If proplist is NULL, then sections named "Properties"
  * are not allowed at all in the configuration file. */
-int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, pa_proplist *proplist, void *userdata);
+int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void *userdata);
 
 /* Generic parsers for integers, size_t, booleans and strings */
 int pa_config_parse_int(pa_config_parser_state *state);

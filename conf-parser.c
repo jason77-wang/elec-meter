@@ -27,17 +27,15 @@
 #include <stdio.h>
 #include <errno.h>
 
-#include <pulse/xmalloc.h>
-
-#include <pulsecore/core-error.h>
-#include <pulsecore/log.h>
-#include <pulsecore/core-util.h>
-#include <pulsecore/macro.h>
-
 #include "conf-parser.h"
+#include "xmalloc.h"
+#include "core-util.h"
 
 #define WHITESPACE " \t\n"
 #define COMMENTS "#;\n"
+
+#define false 0
+#define true 1
 
 /* Run the user supplied parser for an assignment */
 static int normal_assignment(pa_config_parser_state *state) {
@@ -65,7 +63,7 @@ static int normal_assignment(pa_config_parser_state *state) {
 
     return -1;
 }
-
+#if 0
 /* Parse a proplist entry. */
 static int proplist_assignment(pa_config_parser_state *state) {
     pa_assert(state);
@@ -78,6 +76,7 @@ static int proplist_assignment(pa_config_parser_state *state) {
 
     return 0;
 }
+#endif
 
 /* Parse a variable assignment line */
 static int parse_line(pa_config_parser_state *state) {
@@ -105,7 +104,7 @@ static int parse_line(pa_config_parser_state *state) {
             }
         }
 
-        r = pa_config_parse(fn, NULL, state->item_table, state->proplist, state->userdata);
+        r = pa_config_parse(fn, NULL, state->item_table, state->userdata);
         pa_xfree(path);
         return r;
     }
@@ -123,16 +122,7 @@ static int parse_line(pa_config_parser_state *state) {
 
         pa_xfree(state->section);
         state->section = pa_xstrndup(state->lvalue + 1, k-2);
-
-        if (pa_streq(state->section, "Properties")) {
-            if (!state->proplist) {
-                pa_log("[%s:%u] \"Properties\" section is not allowed in this file.", state->filename, state->lineno);
-                return -1;
-            }
-
-            state->in_proplist = true;
-        } else
-            state->in_proplist = false;
+        state->in_proplist = false;
 
         return 0;
     }
@@ -155,7 +145,7 @@ static int parse_line(pa_config_parser_state *state) {
 }
 
 /* Go through the file and parse each line */
-int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, pa_proplist *proplist, void *userdata) {
+int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void *userdata) {
     int r = -1;
     bool do_close = !f;
     pa_config_parser_state state;
@@ -179,10 +169,10 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, pa_p
     state.filename = filename;
     state.item_table = t;
     state.userdata = userdata;
-
+#if 0
     if (proplist)
         state.proplist = pa_proplist_new();
-
+#endif
     while (!feof(f)) {
         if (!fgets(state.buf, sizeof(state.buf), f)) {
             if (feof(f))
@@ -197,16 +187,17 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, pa_p
         if (parse_line(&state) < 0)
             goto finish;
     }
-
+#if 0
     if (proplist)
         pa_proplist_update(proplist, PA_UPDATE_REPLACE, state.proplist);
-
+#endif
     r = 0;
 
 finish:
+#if 0
     if (state.proplist)
         pa_proplist_free(state.proplist);
-
+#endif
     pa_xfree(state.section);
 
     if (do_close && f)
