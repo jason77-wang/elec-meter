@@ -137,11 +137,12 @@ static int parse_line(pa_config_parser_state *state) {
 
     state->lvalue = pa_strip(state->lvalue);
     state->rvalue = pa_strip(state->rvalue);
-
+#if 0
     if (state->in_proplist)
         return proplist_assignment(state);
     else
-        return normal_assignment(state);
+#endif
+	    return normal_assignment(state);
 }
 
 /* Go through the file and parse each line */
@@ -157,12 +158,12 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void
 
     if (!f && !(f = pa_fopen_cloexec(filename, "r"))) {
         if (errno == ENOENT) {
-            pa_log_debug("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
+		//            pa_log_debug("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
             r = 0;
             goto finish;
         }
 
-        pa_log_warn("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
+	//        pa_log_warn("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
         goto finish;
     }
 
@@ -178,7 +179,7 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void
             if (feof(f))
                 break;
 
-            pa_log_warn("Failed to read configuration file '%s': %s", filename, pa_cstrerror(errno));
+	    //            pa_log_warn("Failed to read configuration file '%s': %s", filename, pa_cstrerror(errno));
             goto finish;
         }
 

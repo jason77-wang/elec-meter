@@ -17,6 +17,12 @@
 
 typedef int bool;
 
+#define pa_log_debug //
+#define pa_log_warn //
+
+#define pa_memzero(x,l) (memset((x), 0, (l)))
+#define pa_zero(x) (pa_memzero(&(x), sizeof(x)))
+
 /* Does exactly nothing */
 #define pa_nop() do {} while (0)
 
@@ -45,5 +51,10 @@ char *pa_sprintf_malloc(const char *format, ...);
 FILE* pa_fopen_cloexec(const char *path, const char *mode);
 
 bool pa_startswith(const char *s, const char *pfx);
+
+int pa_atoi(const char *s, int32_t *ret_i);
+int pa_atou(const char *s, uint32_t *ret_u);
+int pa_atol(const char *s, long *ret_l);
+int pa_atod(const char *s, double *ret_d);
 
 #endif

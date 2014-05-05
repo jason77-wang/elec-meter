@@ -207,3 +207,188 @@ finish:
     pa_make_fd_cloexec(fileno(f));
     return f;
 }
+
+bool pa_is_path_absolute(const char *fn) {
+    pa_assert(fn);
+
+#ifndef OS_IS_WIN32
+    return *fn == '/';
+#else
+    return strlen(fn) >= 3 && isalpha(fn[0]) && fn[1] == ':' && fn[2] == '\\';
+#endif
+}
+
+/* Convert the string s to a signed integer in *ret_i */
+int pa_atoi(const char *s, int32_t *ret_i) {
+    long l;
+
+    pa_assert(s);
+    pa_assert(ret_i);
+
+    if (pa_atol(s, &l) < 0)
+        return -1;
+
+    if ((int32_t) l != l) {
+        errno = ERANGE;
+        return -1;
+    }
+
+    *ret_i = (int32_t) l;
+
+    return 0;
+}
+
+/* Convert the string s to an unsigned integer in *ret_u */
+int pa_atou(const char *s, uint32_t *ret_u) {
+    char *x = NULL;
+    unsigned long l;
+
+    pa_assert(s);
+    pa_assert(ret_u);
+
+    errno = 0;
+    l = strtoul(s, &x, 0);
+
+    if (!x || *x || errno) {
+        if (!errno)
+            errno = EINVAL;
+        return -1;
+    }
+
+    if ((uint32_t) l != l) {
+        errno = ERANGE;
+        return -1;
+    }
+
+    *ret_u = (uint32_t) l;
+
+    return 0;
+}
+
+/* Convert the string s to a signed long integer in *ret_l. */
+int pa_atol(const char *s, long *ret_l) {
+    char *x = NULL;
+    long l;
+
+    pa_assert(s);
+    pa_assert(ret_l);
+
+    errno = 0;
+    l = strtol(s, &x, 0);
+
+    if (!x || *x || errno) {
+        if (!errno)
+            errno = EINVAL;
+        return -1;
+    }
+
+    *ret_l = l;
+
+    return 0;
+}
+
+/* Try to parse a boolean string value.*/
+int pa_parse_boolean(const char *v) {
+    pa_assert(v);
+
+    /* First we check language independent */
+    if (pa_streq(v, "1") || !strcasecmp(v, "y") || !strcasecmp(v, "t")
+            || !strcasecmp(v, "yes") || !strcasecmp(v, "true") || !strcasecmp(v, "on"))
+        return 1;
+    else if (pa_streq(v, "0") || !strcasecmp(v, "n") || !strcasecmp(v, "f")
+                 || !strcasecmp(v, "no") || !strcasecmp(v, "false") || !strcasecmp(v, "off"))
+        return 0;
+
+#ifdef HAVE_LANGINFO_H
+{
+    const char *expr;
+    /* And then we check language dependent */
+    if ((expr = nl_langinfo(YESEXPR)))
+        if (expr[0])
+            if (pa_match(expr, v) > 0)
+                return 1;
+
+    if ((expr = nl_langinfo(NOEXPR)))
+        if (expr[0])
+            if (pa_match(expr, v) > 0)
+                return 0;
+}
+#endif
+
+    errno = EINVAL;
+    return -1;
+}
+
+/** Similar to pa_read(), but handles writes */
+ssize_t pa_write(int fd, const void *buf, size_t count, int *type) {
+
+    if (!type || *type == 0) {
+        ssize_t r;
+
+        for (;;) {
+            if ((r = send(fd, buf, count, MSG_NOSIGNAL)) < 0) {
+
+                if (errno == EINTR)
+                    continue;
+
+                break;
+            }
+
+            return r;
+        }
+
+#ifdef OS_IS_WIN32
+        if (WSAGetLastError() != WSAENOTSOCK) {
+            errno = WSAGetLastError();
+            return r;
+        }
+#else
+        if (errno != ENOTSOCK)
+            return r;
+#endif
+
+        if (type)
+            *type = 1;
+    }
+
+    for (;;) {
+        ssize_t r;
+
+        if ((r = write(fd, buf, count)) < 0)
+            if (errno == EINTR)
+                continue;
+
+        return r;
+    }
+}
+
+/** Similar to pa_loop_read(), but wraps write() */
+ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type) {
+    ssize_t ret = 0;
+    int _type;
+
+    pa_assert(fd >= 0);
+    pa_assert(data);
+    pa_assert(size);
+
+    if (!type) {
+        _type = 0;
+        type = &_type;
+    }
+
+    while (size > 0) {
+        ssize_t r;
+
+        if ((r = pa_write(fd, data, size, type)) < 0)
+            return r;
+
+        if (r == 0)
+            break;
+
+        ret += r;
+        data = (const uint8_t*) data + r;
+        size -= (size_t) r;
+    }
+
+    return ret;
+}
