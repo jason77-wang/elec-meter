@@ -2,16 +2,16 @@ CC = gcc
 OBJ = main.o conf-parser.o xmalloc.o core-util.o
 
 main: $(OBJ)
-	$(CC) -o $@ $^
+	$(CC) -g -o $@ $^
 
 main.o: main.c
-	$(CC) -c $<
+	$(CC) -c -g $<
 
 conf-parser.o: conf-parser.c conf-parser.h
-	$(CC) -c $<
+	$(CC) -c -g $<
 
 xmalloc.o: xmalloc.c xmalloc.h
-	$(CC) -c $<
+	$(CC) -c -g $<
 
 core-util.o: core-util.c core-util.h
-	$(CC) -c $<
+	$(CC) -c -g $<
