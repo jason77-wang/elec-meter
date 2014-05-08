@@ -1,56 +1,92 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "meter.h"
 #include "conf-parser.h"
 
-    pa_config_item items[] = {
-        /* [General] */
-        { "slave-addr",            pa_config_parse_unsigned,          NULL, NULL },
-        { "name",     pa_config_parse_string,            NULL, NULL },
-#if 0
-        { "description",         pa_config_parse_string,            NULL, "General" },
-        { "mute-during-activation", pa_config_parse_bool,           NULL, "General" },
-        { "eld-device",          pa_config_parse_int,               NULL, "General" },
-
-        /* [Option ...] */
-        { "priority",            option_parse_priority,             NULL, NULL },
-        { "name",                option_parse_name,                 NULL, NULL },
-
-        /* [Jack ...] */
-        { "state.plugged",       jack_parse_state,                  NULL, NULL },
-        { "state.unplugged",     jack_parse_state,                  NULL, NULL },
-
-        /* [Element ...] */
-        { "switch",              element_parse_switch,              NULL, NULL },
-        { "volume",              element_parse_volume,              NULL, NULL },
-        { "enumeration",         element_parse_enumeration,         NULL, NULL },
-        { "override-map.1",      element_parse_override_map,        NULL, NULL },
-        { "override-map.2",      element_parse_override_map,        NULL, NULL },
-        /* ... later on we might add override-map.3 and so on here ... */
-        { "required",            element_parse_required,            NULL, NULL },
-        { "required-any",        element_parse_required,            NULL, NULL },
-        { "required-absent",     element_parse_required,            NULL, NULL },
-        { "direction",           element_parse_direction,           NULL, NULL },
-        { "direction-try-other", element_parse_direction_try_other, NULL, NULL },
-        { "volume-limit",        element_parse_volume_limit,        NULL, NULL },
-#endif
-        { NULL, NULL, NULL, NULL }
-    };
-
-struct ele_meter {
-  char *name;
-  unsigned int addr;
+static pa_config_item items[] = {
+	/* [meter] */
+	{"slave-addr",		pa_config_parse_unsigned, NULL, NULL},
+	{"name",		pa_config_parse_string, NULL, NULL},
+	/* [meter registers] */
+	{"register-addr",	pa_config_parse_unsigned, NULL, NULL},
+	{"repeat-num",		pa_config_parse_unsigned, NULL, NULL},
+	{"scale-addr",		pa_config_parse_unsigned, NULL, NULL},
+	{"unit",		pa_config_parse_string, NULL, NULL},
+	{"data_type",		pa_config_parse_string, NULL, NULL},
+        {NULL, NULL, NULL, NULL}
 };
 
-struct ele_meter my_meter;
+struct ele_meter *glb_meter;
+static pa_config_parser_state state;
+
+static void fill_parser_state_meter(struct pa_config_item *items,
+				    struct ele_meter *pmeter)
+{
+	items[0].data = &pmeter->addr;
+	items[1].data = &pmeter->name;
+}
+
+static void fill_parser_state_register(struct pa_config_item *items,
+				       struct meter_register *reg)
+{
+	items[2].data = &reg->reg_addr;
+	items[3].data = &reg->repeat_num;
+	items[4].data = &reg->scale_addr;
+	items[5].data = &reg->unit;
+	items[6].data = &reg->dtype;
+}
+
 int main ()
 {
 	int r;
-	
-	items[0].data = &my_meter.addr;
-	items[1].data = &my_meter.name;
-	r = pa_config_parse("./elec_meters.conf", NULL, items, NULL);
+	FILE *f;
+	const char *filename = "./elec_meters.conf";
+	void *userdata;
+	struct meter_register **next_reg;
 
-	printf("name = %s\n", my_meter.name);
-	printf("addr = %d\n", my_meter.addr);
+	if (!(f = pa_fopen_cloexec(filename, "r"))) {
+		printf("open meter config failed.\n");
+		goto error_exit;
+	}
+
+	state.filename = filename;
+	state.item_table = items;
+	state.userdata = userdata;
+
+	glb_meter = malloc(sizeof(struct ele_meter));
+	
+	next_reg = &glb_meter->registers;
+	
+	fill_parser_state_meter(items, glb_meter);
+
+parse_again:
+	r = pa_config_parse(f, &state);
+
+	if (r == 1) {
+		struct meter_register *reg;
+		reg = malloc(sizeof(struct meter_register));
+		fill_parser_state_register(items, reg);		
+		*next_reg = reg;
+		next_reg = &reg->next;
+		goto parse_again;
+	}
+
+
+
+
+
+	printf("r = %d\n", r);
+	printf("name = %s\n", glb_meter->name);
+	printf("addr = %d\n", glb_meter->addr);
+	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", glb_meter->registers->reg_addr,
+	       glb_meter->registers->repeat_num, glb_meter->registers->unit);
+
+	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", glb_meter->registers->next->reg_addr,
+	       glb_meter->registers->next->repeat_num, glb_meter->registers->next->unit);
+
+	return 0;
+
+ error_exit:
+	return -1;
 }

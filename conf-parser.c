@@ -89,7 +89,7 @@ static int parse_line(pa_config_parser_state *state) {
 
     if (!*state->lvalue)
         return 0;
-
+#if 0
     if (pa_startswith(state->lvalue, ".include ")) {
         char *path = NULL, *fn;
         int r;
@@ -108,7 +108,15 @@ static int parse_line(pa_config_parser_state *state) {
         pa_xfree(path);
         return r;
     }
+#endif
 
+	if (*state->lvalue == '[' || *state->lvalue == '}')
+	  return 0; /* this is the beginning of a new elec meter */
+
+	if (*state->lvalue == '{')
+	  return 1; /* this is the beginning of a new register */
+
+#if 0
     if (*state->lvalue == '[') {
         size_t k;
 
@@ -126,7 +134,7 @@ static int parse_line(pa_config_parser_state *state) {
 
         return 0;
     }
-
+#endif
     if (!(state->rvalue = strchr(state->lvalue, '='))) {
         pa_log("[%s:%u] Missing '='.", state->filename, state->lineno);
         return -1;
@@ -145,65 +153,39 @@ static int parse_line(pa_config_parser_state *state) {
 	    return normal_assignment(state);
 }
 
+
+/* r=-1 error, r=0 eof, r=1 new register, */
 /* Go through the file and parse each line */
-int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void *userdata) {
+int pa_config_parse(FILE *f, pa_config_parser_state *pstate) {
     int r = -1;
     bool do_close = !f;
-    pa_config_parser_state state;
 
-    pa_assert(filename);
-    pa_assert(t);
+    pa_assert(pstate);
 
-    pa_zero(state);
-
-    if (!f && !(f = pa_fopen_cloexec(filename, "r"))) {
-        if (errno == ENOENT) {
-		//            pa_log_debug("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
-            r = 0;
-            goto finish;
-        }
-
-	//        pa_log_warn("Failed to open configuration file '%s': %s", filename, pa_cstrerror(errno));
+    if (!f)
         goto finish;
-    }
 
-    state.filename = filename;
-    state.item_table = t;
-    state.userdata = userdata;
-#if 0
-    if (proplist)
-        state.proplist = pa_proplist_new();
-#endif
     while (!feof(f)) {
-        if (!fgets(state.buf, sizeof(state.buf), f)) {
+      int ret; 
+        if (!fgets(pstate->buf, sizeof(pstate->buf), f)) {
             if (feof(f))
                 break;
 
-	    //            pa_log_warn("Failed to read configuration file '%s': %s", filename, pa_cstrerror(errno));
             goto finish;
         }
 
-        state.lineno++;
-
-        if (parse_line(&state) < 0)
+        pstate->lineno++;
+	
+	ret = parse_line(pstate);
+        if (ret != 0) {
+	  r = ret;
             goto finish;
+	}
     }
-#if 0
-    if (proplist)
-        pa_proplist_update(proplist, PA_UPDATE_REPLACE, state.proplist);
-#endif
+
     r = 0;
 
 finish:
-#if 0
-    if (state.proplist)
-        pa_proplist_free(state.proplist);
-#endif
-    pa_xfree(state.section);
-
-    if (do_close && f)
-        fclose(f);
-
     return r;
 }
 

@@ -68,8 +68,11 @@ struct pa_config_parser_state {
  * properties, and those properties will be merged into the given
  * proplist. If proplist is NULL, then sections named "Properties"
  * are not allowed at all in the configuration file. */
+#if 0
 int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void *userdata);
-
+#else
+int pa_config_parse(FILE *f, struct pa_config_parser_state *pstate);
+#endif
 /* Generic parsers for integers, size_t, booleans and strings */
 int pa_config_parse_int(pa_config_parser_state *state);
 int pa_config_parse_unsigned(pa_config_parser_state *state);
