@@ -1,17 +1,19 @@
 CC = gcc
-OBJ = main.o conf-parser.o xmalloc.o core-util.o
+CFLAGS = -Wall -g -c
+INCLUDES = -I./
+LIBS = -L./
 
-main: $(OBJ)
-	$(CC) -g -o $@ $^
+SRCS = $(wildcard *.c)
+HDRS = $(wildcard *.h)
+OBJS = $(patsubst %.c, %.o, $(SRCS))
 
-main.o: main.c
-	$(CC) -c -g $<
+main:$(OBJS)
+	$(CC) $(LIBS) $^ -o $@
 
-conf-parser.o: conf-parser.c conf-parser.h
-	$(CC) -c -g $<
+%.o:%.c $(HDRS)	
+	$(CC) $(CFLAGS) $(INCLUDES) $< -o $@
 
-xmalloc.o: xmalloc.c xmalloc.h
-	$(CC) -c -g $<
+clean:
+	-rm -rf main *.o *~
 
-core-util.o: core-util.c core-util.h
-	$(CC) -c -g $<
+PHONY:clean all

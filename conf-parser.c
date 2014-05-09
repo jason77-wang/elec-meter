@@ -158,7 +158,6 @@ static int parse_line(pa_config_parser_state *state) {
 /* Go through the file and parse each line */
 int pa_config_parse(FILE *f, pa_config_parser_state *pstate) {
     int r = -1;
-    bool do_close = !f;
 
     pa_assert(pstate);
 

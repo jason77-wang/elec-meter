@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/socket.h>
 #include <dirent.h>
 
 #ifdef HAVE_LANGINFO_H
@@ -172,7 +173,7 @@ char *pa_sprintf_malloc(const char *format, ...) {
 void pa_make_fd_cloexec(int fd) {
 
 #ifdef FD_CLOEXEC
-    int v;
+    int v = 0;
     pa_assert(fd >= 0);
 
     pa_assert_se((v = fcntl(fd, F_GETFD, 0)) >= 0);

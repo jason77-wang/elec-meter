@@ -42,7 +42,7 @@ int main ()
 	int r;
 	FILE *f;
 	const char *filename = "./elec_meters.conf";
-	void *userdata;
+	//	void *userdata;
 	struct meter_register **next_reg;
 
 	if (!(f = pa_fopen_cloexec(filename, "r"))) {
@@ -52,7 +52,7 @@ int main ()
 
 	state.filename = filename;
 	state.item_table = items;
-	state.userdata = userdata;
+	//	state.userdata = userdata;
 
 	glb_meter = malloc(sizeof(struct ele_meter));
 	

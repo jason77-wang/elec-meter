@@ -56,5 +56,8 @@ int pa_atoi(const char *s, int32_t *ret_i);
 int pa_atou(const char *s, uint32_t *ret_u);
 int pa_atol(const char *s, long *ret_l);
 int pa_atod(const char *s, double *ret_d);
+int pa_parse_boolean(const char *v);
+
+ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type);
 
 #endif
