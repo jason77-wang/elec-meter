@@ -39,8 +39,8 @@ static void fill_parser_state_register(struct pa_config_item *items,
 
 void print_register_info(struct meter_register *preg)
 {
-	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", preg->reg_addr,
-	       preg->repeat_num, preg->unit);
+	printf("reg_addr = %d, repeat_num = %d, unit = %s, scale_addr = %d\n", preg->reg_addr,
+	       preg->repeat_num, preg->unit, preg->scale_addr);
 	printf("\n");
 }
 
@@ -80,7 +80,7 @@ int main ()
 	int r;
 	FILE *f;
 	const char *filename = "./elec_meters.conf";
-	struct ele_meter *next_meter;
+	struct ele_meter **next_meter;
 	struct meter_register **next_reg;
 
 	if (!(f = pa_fopen_cloexec(filename, "r"))) {
@@ -91,12 +91,7 @@ int main ()
 	state.filename = filename;
 	state.item_table = items;
 
-	glb_meter = malloc(sizeof(struct ele_meter));
-	
-	next_reg = &glb_meter->registers;
-	next_meter = glb_meter;
-
-	fill_parser_state_meter(items, glb_meter);
+	next_meter = &glb_meter;
 
 parse_again:
 	r = pa_config_parse(f, &state);
@@ -113,10 +108,13 @@ parse_again:
 
 	/* r = 2 means a new meter is found */
 	if (r == 2) {
-		next_meter->next = malloc(sizeof(struct ele_meter));
-		next_meter = next_meter->next;
-		next_reg = &next_meter->registers;
-		fill_parser_state_meter(items, next_meter);
+		struct ele_meter *pmeter;
+		
+		pmeter = malloc(sizeof(struct ele_meter));
+		fill_parser_state_meter(items, pmeter);
+		*next_meter = pmeter;
+		next_meter = &pmeter->next;
+		next_reg = &pmeter->registers;
 		goto parse_again;
 	}
 

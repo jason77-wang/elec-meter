@@ -110,13 +110,13 @@ static int parse_line(pa_config_parser_state *state) {
     }
 #endif
 
-	if (*state->lvalue == '[' || *state->lvalue == '}')
+	if (*state->lvalue == ']' || *state->lvalue == '}')
 		return 0; /* this is the beginning of a new elec meter */
 
 	if (*state->lvalue == '{')
 		return 1; /* this is the beginning of a new register */
 
-	if (*state->lvalue == ']')
+	if (*state->lvalue == '[')
 		return 2; /* this is the beginning of a new meter */
 
 #if 0
