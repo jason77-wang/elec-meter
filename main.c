@@ -37,12 +37,50 @@ static void fill_parser_state_register(struct pa_config_item *items,
 	items[6].data = &reg->dtype;
 }
 
+void print_register_info(struct meter_register *preg)
+{
+	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", preg->reg_addr,
+	       preg->repeat_num, preg->unit);
+	printf("\n");
+}
+
+void print_meter_registers(struct ele_meter *pmeter)
+{
+	struct meter_register *preg;
+
+	preg = pmeter->registers;
+	while (preg) {
+		print_register_info(preg);
+		preg = preg->next;
+	}
+}
+
+void print_meter_info(struct ele_meter *pmeter)
+{
+	printf("\n\n\n");
+	printf("name = %s\n", pmeter->name);
+	printf("addr = %d\n", pmeter->addr);
+}
+
+void print_all_meters()
+{
+	struct ele_meter *pmeter;
+
+	pmeter = glb_meter;
+
+	while (pmeter) {
+		print_meter_info(pmeter);
+		print_meter_registers(pmeter);
+		pmeter = pmeter->next;
+	}
+}
+
 int main ()
 {
 	int r;
 	FILE *f;
 	const char *filename = "./elec_meters.conf";
-	//	void *userdata;
+	struct ele_meter *next_meter;
 	struct meter_register **next_reg;
 
 	if (!(f = pa_fopen_cloexec(filename, "r"))) {
@@ -52,17 +90,18 @@ int main ()
 
 	state.filename = filename;
 	state.item_table = items;
-	//	state.userdata = userdata;
 
 	glb_meter = malloc(sizeof(struct ele_meter));
 	
 	next_reg = &glb_meter->registers;
-	
+	next_meter = glb_meter;
+
 	fill_parser_state_meter(items, glb_meter);
 
 parse_again:
 	r = pa_config_parse(f, &state);
 
+	/* r = 1 means a new register is found */
 	if (r == 1) {
 		struct meter_register *reg;
 		reg = malloc(sizeof(struct meter_register));
@@ -72,18 +111,17 @@ parse_again:
 		goto parse_again;
 	}
 
-
-
-
+	/* r = 2 means a new meter is found */
+	if (r == 2) {
+		next_meter->next = malloc(sizeof(struct ele_meter));
+		next_meter = next_meter->next;
+		next_reg = &next_meter->registers;
+		fill_parser_state_meter(items, next_meter);
+		goto parse_again;
+	}
 
 	printf("r = %d\n", r);
-	printf("name = %s\n", glb_meter->name);
-	printf("addr = %d\n", glb_meter->addr);
-	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", glb_meter->registers->reg_addr,
-	       glb_meter->registers->repeat_num, glb_meter->registers->unit);
-
-	printf("reg_addr = %d, repeat_num = %d, unit = %s\n", glb_meter->registers->next->reg_addr,
-	       glb_meter->registers->next->repeat_num, glb_meter->registers->next->unit);
+	print_all_meters();
 
 	return 0;
 
