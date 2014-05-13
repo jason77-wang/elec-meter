@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -g -c
 INCLUDES = -I./
 LIBS = -L./
-WITHLIB = -lmodbus
+WITHLIB = -lmodbus -lsqlite3
 
 SRCS = $(wildcard *.c)
 HDRS = $(wildcard *.h)

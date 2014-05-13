@@ -3,6 +3,7 @@
 
 #include "meter.h"
 #include "conf-parser.h"
+#include "db_sqlite.h"
 
 static pa_config_item items[] = {
 	/* [meter] */
@@ -75,26 +76,17 @@ void print_all_meters()
 	}
 }
 
-int main ()
+int build_glb_meter_list(FILE *f, pa_config_parser_state *pstate)
 {
 	int r;
-	FILE *f;
-	const char *filename = "./elec_meters.conf";
 	struct ele_meter **next_meter;
 	struct meter_register **next_reg;
 
-	if (!(f = pa_fopen_cloexec(filename, "r"))) {
-		printf("open meter config failed.\n");
-		goto error_exit;
-	}
-
-	state.filename = filename;
-	state.item_table = items;
 
 	next_meter = &glb_meter;
 
 parse_again:
-	r = pa_config_parse(f, &state);
+	r = pa_config_parse(f, pstate);
 
 	/* r = 1 means a new register is found */
 	if (r == 1) {
@@ -119,10 +111,33 @@ parse_again:
 	}
 
 	printf("r = %d\n", r);
+
+	return r;
+}
+
+int main ()
+{
+	FILE *f;
+	int r;
+
+	const char *filename = "./elec_meters.conf";
+	if (!(f = pa_fopen_cloexec(filename, "r"))) {
+		printf("open meter config failed.\n");
+		goto error_exit;
+	}
+
+	state.filename = filename;
+	state.item_table = items;
+
+	r = build_glb_meter_list(f, &state);
+	if (r != 0)
+		goto error_exit;
+
+	mb_read_all_meters(glb_meter);
+
 	print_all_meters();
 
-	return 0;
-
- error_exit:
+	sqlite_test();
+error_exit:
 	return -1;
 }

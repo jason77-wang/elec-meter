@@ -28,8 +28,7 @@ void mb_read_meter(struct ele_meter *pmeter)
 {
 	modbus_t *ctx;
 	int rc;
-	int mode;
-	uint16_t tab_reg[64];
+	struct meter_register *preg;
 
         ctx = modbus_new_rtu("/dev/ttyS0", 9600, 'N', 8, 1);
 	modbus_set_slave(ctx, pmeter->addr);
@@ -43,14 +42,35 @@ void mb_read_meter(struct ele_meter *pmeter)
 		return;
         }
 
-	mode = modbus_rtu_get_serial_mode(ctx);
-	printf(".....................mode = %x\n", mode);
-
-	rc = modbus_read_registers(ctx, 0, 2, tab_reg);
+	preg = pmeter->registers;
+	
+	while(preg) {
+		rc = modbus_read_registers(ctx, preg->reg_addr, 2, &preg->reg_val);
+		if (rc != 0) {
+			preg = preg->next;
+			continue;
+		}
+		rc = modbus_read_registers(ctx, preg->scale_addr, 2, &preg->scale_val);
+		preg = preg->next;
+	}
 	printf("...................rc = %d\n", rc);
 
 	modbus_close(ctx);
 	modbus_free(ctx);
 
 	return;
+}
+
+int mb_read_all_meters(struct ele_meter *imeter)
+{
+	struct ele_meter *pmeter;
+
+	pmeter = imeter;
+
+	while (pmeter) {
+		mb_read_meter(pmeter);
+		pmeter = pmeter->next;
+	}
+
+	return 0;
 }
