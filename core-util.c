@@ -393,3 +393,15 @@ ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type) {
 
     return ret;
 }
+
+bool is_file_exist(const char* filename)
+{
+	FILE *f;
+	pa_assert(filename);
+
+	if (!(f = fopen(filename, "r")))
+		return 0;
+
+	fclose(f);
+	return 1;
+}

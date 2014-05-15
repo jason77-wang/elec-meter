@@ -5,6 +5,8 @@
 #include "conf-parser.h"
 #include "db_sqlite.h"
 
+#define GLB_DBFILE "./ele_meter.db"
+
 static pa_config_item items[] = {
 	/* [meter] */
 	{"slave-addr",		pa_config_parse_unsigned, NULL, NULL},
@@ -137,7 +139,8 @@ int main ()
 
 	print_all_meters();
 
-	sqlite_test();
+	db_glb_init(GLB_DBFILE);
+
 error_exit:
 	return -1;
 }
