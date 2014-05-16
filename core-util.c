@@ -12,6 +12,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <dirent.h>
+#include <time.h>
 
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
@@ -404,4 +405,21 @@ bool is_file_exist(const char* filename)
 
 	fclose(f);
 	return 1;
+}
+
+char * get_current_date_time(void)
+{
+    time_t rawtime;
+    struct tm * timeinfo;
+
+    time(&rawtime); /* get the current time */
+    timeinfo = localtime(&rawtime);
+
+    return pa_sprintf_malloc("%4d-%02d-%02d %02d:%02d:%02d\n",
+            1900+timeinfo->tm_year, /* year */
+            1+timeinfo->tm_mon, /* month */
+            timeinfo->tm_mday, /* date */
+            timeinfo->tm_hour, /* hour */
+            timeinfo->tm_min, /* minute */
+            timeinfo->tm_sec); /* second */
 }

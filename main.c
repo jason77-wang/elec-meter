@@ -121,6 +121,7 @@ int main ()
 {
 	FILE *f;
 	int r;
+	sqlite3 *db;
 
 	const char *filename = "./elec_meters.conf";
 	if (!(f = pa_fopen_cloexec(filename, "r"))) {
@@ -139,8 +140,15 @@ int main ()
 
 	print_all_meters();
 
-	db_glb_init(GLB_DBFILE);
+	db = db_glb_init(GLB_DBFILE);
+	if (db == NULL) {
+		printf("openning database failed\n");
+		goto error_exit;
+	}
 
+	db_insert_meters(db, glb_meter);
+
+	db_glb_close(db);
 error_exit:
 	return -1;
 }

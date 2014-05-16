@@ -61,4 +61,6 @@ int pa_parse_boolean(const char *v);
 ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type);
 
 bool is_file_exist(const char* filename);
+
+char * get_current_date_time(void);
 #endif
